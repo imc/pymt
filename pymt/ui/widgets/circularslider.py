@@ -6,7 +6,7 @@ Circular Slider: Using this you can make circularly shaped sliders
 __all__ = ['MTCircularSlider']
 
 from OpenGL.GL import *
-from ...graphx import drawSemiCircle, gx_matrix_identity, set_color
+from ...graphx import drawSemiCircle, gx_matrix, set_color
 from ...vector import Vector
 from ..factory import MTWidgetFactory
 from widget import MTWidget
@@ -71,8 +71,8 @@ class MTCircularSlider(MTWidget):
 
     def collide_point(self, x, y):
         #A algorithm to find the whether a touch is within a semi ring
-        point_dist = Vector(self.pos).distance((x, y))
-        point_angle = Vector(self.radius_line).angle((x - self.pos[0], y - self.pos[1]))
+        point_dist = Vector(self.center).distance((x, y))
+        point_angle = Vector(self.radius_line).angle((x - self.center[0], y - self.center[1]))
         if point_angle < 0:
            point_angle=360+point_angle
         if point_angle <= self.sweep_angle and point_angle >=0:
@@ -84,7 +84,7 @@ class MTCircularSlider(MTWidget):
     def on_touch_down(self, touch):
         if self.collide_point(touch.x, touch.y):
             self.touchstarts.append(touch.id)
-            self.last_touch = (touch.x - self.pos[0], touch.y - self.pos[1])
+            self.last_touch = (touch.x - self.center[0], touch.y - self.center[1])
             self._value = (self.slider_fill_angle) * (self.max - self.min) / self.sweep_angle + self.min
             self._calculate_angle()
             return True
@@ -95,7 +95,7 @@ class MTCircularSlider(MTWidget):
 
     def on_touch_move(self, touch):
         if self.collide_point(touch.x, touch.y) and touch.id in self.touchstarts:
-            self.last_touch = (touch.x - self.pos[0], touch.y - self.pos[1])
+            self.last_touch = (touch.x - self.center[0], touch.y - self.center[1])
             self._value = (self.slider_fill_angle) * (self.max - self.min) / self.sweep_angle + self.min
             self._calculate_angle()
             return True
@@ -109,13 +109,13 @@ class MTCircularSlider(MTWidget):
         self.dispatch_event('on_value_change', self._value)
 
     def on_draw(self):
-        with gx_matrix_identity:
+        with gx_matrix:
             set_color(*self.style.get('bg-color'))
             glTranslated(self.pos[0], self.pos[1], 0)
             glRotatef(-self.rotation, 0, 0, 1)
-            drawSemiCircle((0,0),self.radius-self.thickness,self.radius,32,1,0,self.sweep_angle)
+            drawSemiCircle((self.size[0]/2,self.size[1]/2),self.radius-self.thickness,self.radius,32,1,0,self.sweep_angle)
             set_color(*self.style.get('slider-color'))
-            drawSemiCircle((0,0),self.radius-self.thickness+self.padding,self.radius-self.padding,32,1,0,self.slider_fill_angle)
+            drawSemiCircle((self.size[0]/2,self.size[1]/2),self.radius-self.thickness+self.padding,self.radius-self.padding,32,1,0,self.slider_fill_angle)
 
     def _get_value(self,value):
         return self._value
