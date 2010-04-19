@@ -65,8 +65,15 @@ class MTCircularSlider(MTWidget):
         self.min            = kwargs.get('min')
         self.max            = kwargs.get('max')
         self._value         = self.min
-        if kwargs.get('value'):
-            self._value = kwargs.get('value')
+        self._scale = (self.max - self.min) / float(360)
+
+        if not self.min < self.max:
+            raise(Exception('min >= max!'))
+        if not self.swee_angle > 0:
+            raise(Exception('sweep_angle <= 0'))
+            
+        if kwargs.get('value') != None:
+            self._set_value(kwargs.get('value'))
         self.touchstarts    = []
 
     def collide_point(self, x, y):
@@ -97,11 +104,14 @@ class MTCircularSlider(MTWidget):
         if self.collide_point(touch.x, touch.y) and touch.id in self.touchstarts:
             self.last_touch = (touch.x - self.center[0], touch.y - self.center[1])
             self._value = (self.slider_fill_angle) * (self.max - self.min) / self.sweep_angle + self.min
-            self._calculate_angle()
+            self._calculate_angle_from_touch()
             return True
 
-    def _calculate_angle(self):
+    def _calculate_angle_from_touch(self):
         self.angle = Vector(self.radius_line).angle(self.last_touch)
+        self._calculate_angle()
+
+    def _calculate_angle(self):
         if self.angle<0:
             self.slider_fill_angle = self.angle+360
         else:
@@ -117,11 +127,11 @@ class MTCircularSlider(MTWidget):
             set_color(*self.style.get('slider-color'))
             drawSemiCircle((self.size[0]/2,self.size[1]/2),self.radius-self.thickness+self.padding,self.radius-self.padding,32,1,0,self.slider_fill_angle)
 
-    def _get_value(self,value):
+    def _get_value(self):
         return self._value
     def _set_value(self,value):
-        self.slider_fill_angle = float(value)/float(100)*self.sweep_angle
-        self._value = float(value)/float(100)*self.max
+        self._value = value
+        self.angle = float(value - self.min) / (float(self.max - self.min) / float(self.sweep_angle))
         self._calculate_angle()
     value = property(_get_value, _set_value, doc='Sets the current value of the slider')
 
