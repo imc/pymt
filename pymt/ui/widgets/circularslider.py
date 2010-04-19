@@ -68,9 +68,11 @@ class MTCircularSlider(MTWidget):
         self._scale = (self.max - self.min) / float(360)
 
         if not self.min < self.max:
-            raise(Exception('min >= max!'))
-        if not self.swee_angle > 0:
+            raise(Exception('min >= max'))
+        if not self.sweep_angle > 0:
             raise(Exception('sweep_angle <= 0'))
+        if not self.sweep_angle <= 360:
+            raise(Exception('sweep_angle > 360'))
             
         if kwargs.get('value') != None:
             self._set_value(kwargs.get('value'))
