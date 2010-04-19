@@ -132,9 +132,10 @@ class MTCircularSlider(MTWidget):
     def _get_value(self):
         return self._value
     def _set_value(self,value):
-        self._value = value
-        self.angle = float(value - self.min) / (float(self.max - self.min) / float(self.sweep_angle))
-        self._calculate_angle()
+        if value >= self.min and value <= self.max:
+            self._value = value
+            self.angle = float(value - self.min) / (float(self.max - self.min) / float(self.sweep_angle))
+            self._calculate_angle()
     value = property(_get_value, _set_value, doc='Sets the current value of the slider')
 
 MTWidgetFactory.register('MTCircularSlider', MTCircularSlider)
