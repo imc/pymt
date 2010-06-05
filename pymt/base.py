@@ -67,10 +67,12 @@ class TouchEventLoop(object):
         self.quit = False
         self.input_events = []
         self.postproc_modules = []
+        self.status = 'idle'
 
     def start(self):
         '''Must be call only one time before run().
         This start all configured input providers.'''
+        self.status = 'started'
         global pymt_providers
         for provider in pymt_providers:
             provider.start()
@@ -78,9 +80,9 @@ class TouchEventLoop(object):
     def close(self):
         '''Exit from the main loop, and stop all configured
         input providers.'''
-        global pymt_providers
         self.quit = True
         self.stop()
+        self.status = 'closed'
 
     def stop(self):
         '''Stop all input providers'''
@@ -90,6 +92,7 @@ class TouchEventLoop(object):
         #happens, crashing badly without error
         for provider in reversed(pymt_providers):
             provider.stop()
+        self.status = 'stopped'
 
     def add_postproc_module(self, mod):
         '''Add a postproc input module (DoubleTap, RetainTouch are default)'''
@@ -124,7 +127,7 @@ class TouchEventLoop(object):
 
         # dispatch grabbed touch
         touch.grab_state = True
-        for _wid in touch.grab_list.iterate():
+        for _wid in touch.grab_list[:]:
 
             # it's a weakref, call it!
             wid = _wid()
@@ -228,6 +231,7 @@ class TouchEventLoop(object):
         self.exit()
 
     def exit(self):
+        global pymt_window
         '''Close the main loop, and close the window'''
         self.close()
         if pymt_window:
@@ -306,10 +310,6 @@ def runTouchApp(widget=None, slave=False):
     #    from ui.window import MTWindow
     #    pymt_window = MTWindow()
 
-    # Check if we show event stats
-    if pymt.pymt_config.getboolean('pymt', 'show_eventstats'):
-        pymt.widget.event_stats_activate()
-
     # Instance all configured input
     for key, value in pymt.pymt_config.items('input'):
         pymt_logger.debug('Base: Create provider from %s' % (str(value)))
@@ -365,15 +365,14 @@ def runTouchApp(widget=None, slave=False):
             pymt_window.mainloop()
     finally:
         stopTouchApp()
-
-    # Show event stats
-    if pymt.pymt_config.getboolean('pymt', 'show_eventstats'):
-        pymt.widget.event_stats_print()
+        return
 
 def stopTouchApp():
     '''Stop the current application by leaving the main loop'''
     global pymt_evloop
-    if pymt_evloop is None or pymt_evloop.quit:
+    if pymt_evloop is None:
+        return
+    if pymt_evloop.status != 'started':
         return
     pymt_logger.info('Base: Leaving application in progress...')
     pymt_evloop.close()

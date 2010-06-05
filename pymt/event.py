@@ -143,7 +143,9 @@ the particular class documentation.
 __all__ = ('EventDispatcher', )
 
 import inspect
+from weakmethod import WeakMethod
 from baseobject import BaseObject
+from logger import pymt_logger
 
 class EventDispatcher(BaseObject):
     '''Generic event dispatcher interface.
@@ -156,7 +158,7 @@ class EventDispatcher(BaseObject):
     def __init__(self, **kwargs):
         super(EventDispatcher, self).__init__(**kwargs)
         self._event_types = []
-        self._event_stack = [{}]
+        self._event_stack = None
 
     @property
     def event_types(self):
@@ -178,6 +180,9 @@ class EventDispatcher(BaseObject):
                 Name of the event to register.
 
         '''
+        if not hasattr(self, event_type):
+            raise Exception('Missing default handler <%s> in <%s>' % (
+                            event_type, self.__class__.__name__))
         if not event_type in self._event_types:
             self._event_types.append(event_type)
 
@@ -190,7 +195,12 @@ class EventDispatcher(BaseObject):
         object may also be specified, in which case it will be searched for
         callables with event names.
         '''
+        # Create event stack if necessary
+        if self._event_stack is None:
+            self._event_stack = []
+
         # Place dict full of new handlers at beginning of stack
+        self._event_stack.insert(0, {})
         self.set_handlers(*args, **kwargs)
 
     def remove_handler(self, name, handler):
@@ -209,9 +219,11 @@ class EventDispatcher(BaseObject):
             `handler` : callable
                 Event handler to remove.
         '''
+        if self._event_stack is None:
+            return
         for frame in self._event_stack:
             try:
-                if frame[name] is handler:
+                if frame[name]() == handler:
                     del frame[name]
                     break
             except KeyError:
@@ -233,10 +245,12 @@ class EventDispatcher(BaseObject):
 
         # Find the first stack frame containing any of the handlers
         def find_frame():
+            if self._event_stack is None:
+                return
             for frame in self._event_stack:
                 for name, handler in handlers:
                     try:
-                        if frame[name] == handler:
+                        if frame[name]() == handler:
                             return frame
                     except KeyError:
                         pass
@@ -249,7 +263,7 @@ class EventDispatcher(BaseObject):
         # Remove each handler from the frame.
         for name, handler in handlers:
             try:
-                if frame[name] == handler:
+                if frame[name]() == handler:
                     del frame[name]
             except KeyError:
                 pass
@@ -282,6 +296,10 @@ class EventDispatcher(BaseObject):
 
         See `push_handlers` for the accepted argument types.
         '''
+        # Create event stack if necessary
+        if self._event_stack is None:
+            self._event_stack = [{}]
+
         for name, handler in self._get_handlers(args, kwargs):
             self.set_handler(name, handler)
 
@@ -295,7 +313,11 @@ class EventDispatcher(BaseObject):
                 Event handler to attach.
 
         '''
-        self._event_stack[0][name] = handler
+        # Create event stack if necessary
+        if self._event_stack is None:
+            self._event_stack = [{}]
+
+        self._event_stack[0][name] = WeakMethod(handler)
 
     def dispatch_event(self, event_type, *args):
         '''Dispatch a single event to the attached handlers.
@@ -317,26 +339,30 @@ class EventDispatcher(BaseObject):
             return
 
         # search handler stack for matching event handlers
-        for frame in self._event_stack:
-            handler = frame.get(event_type, None)
-            if handler:
+        _event_stack = self._event_stack
+        if _event_stack is not None:
+            for frame in _event_stack:
+                wkhandler = frame.get(event_type, None)
+                if wkhandler is None:
+                    continue
+                handler = wkhandler()
+                if handler is None:
+                    frame.remove(wkhandler)
+                    continue
                 try:
                     if handler(*args):
                         return True
                 except TypeError:
                     self._raise_dispatch_exception(event_type, args, handler)
 
-        # check instance for an event handler
-        if hasattr(self, event_type):
-            try:
-                # call event
-                func = getattr(self, event_type)
-                if func(*args):
-                    return True
-
-            except TypeError, e:
-                self._raise_dispatch_exception(
-                    event_type, args, getattr(self, event_type))
+        # a instance always have a event handler, don't check it with hasattr.
+        try:
+            # call event
+            if getattr(self, event_type)(*args):
+                return True
+        except TypeError, e:
+            self._raise_dispatch_exception(
+                event_type, args, getattr(self, event_type))
 
     def _raise_dispatch_exception(self, event_type, args, handler):
         # A common problem in applications is having the wrong number of
@@ -448,3 +474,13 @@ class EventDispatcher(BaseObject):
             self.push_handlers(**{p1: w2})
         else:
             self.push_handlers(**{p1: lambda_connect})
+
+# install acceleration
+try:
+    import types
+    from accelerate import accelerate
+    if accelerate is not None:
+        EventDispatcher.dispatch_event = types.MethodType(
+            accelerate.eventdispatcher_dispatch_event, None, EventDispatcher)
+except ImportError, e:
+    pymt_logger.warning('Event: Unable to use accelerate module <%s>' % e)

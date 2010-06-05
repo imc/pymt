@@ -15,9 +15,6 @@ import getopt
 import os
 from logger import pymt_logger, LOG_LEVELS
 
-# Version number of current configuration format
-PYMT_CONFIG_VERSION = 9
-
 # internals for post-configuration
 __pymt_post_configuration = []
 def pymt_configure():
@@ -40,6 +37,7 @@ pymt_logger.info('PyMT v%s' % (__version__))
 
 # Global settings options for pymt
 options = {
+    'use_accelerate': True,
     'shadow_window': True,
     'window': ('pygame', 'glut'),
     'text': ('pil', 'cairo', 'pygame'),
@@ -120,6 +118,9 @@ if not 'PYMT_DOC_INCLUDE' in os.environ:
 
     # Note: import are done after logger module initialization,
     # and configuration applied to logger.
+
+    # first, compile & use accelerate module
+    from accelerate import *
 
     # no dependices at all
     from baseobject import *
