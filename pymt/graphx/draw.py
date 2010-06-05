@@ -16,6 +16,7 @@ import os
 import math
 import pymt
 from pymt.cache import Cache
+from pymt.vector import Vector
 from OpenGL.GL import *
 from OpenGL.GLU import gluNewQuadric, gluDisk, gluPartialDisk
 from paint import *
@@ -24,9 +25,10 @@ from colors import *
 
 try:
     import _graphx
-except ImportError:
+    pymt.pymt_logger.info('Graphx: Using accelerate graphx module')
+except ImportError, e:
     _graphx = None
-    pymt.pymt_logger.warning('Extensions: _graphx not available')
+    pymt.pymt_logger.warning('Extensions: _graphx not available: <%s>' % e)
 
 # create a cache for label
 _temp_label = None
@@ -38,7 +40,7 @@ def _make_point_list(points):
     if not t in (tuple, list):
         raise Exception('Point list must be tuple or list of' +
                         'coordinates or points(tuple/list of 2D coords)')
-    if type(points[0]) in (tuple, list): #flatten the points
+    if type(points[0]) in (tuple, list, Vector):
         return [coord for point in points for coord in point]
     else:
         return list(points)
@@ -242,7 +244,7 @@ def drawPolygon(points, style=GL_POLYGON, linewidth=0):
                 'line' == 'GL_LINE_LOOP' == GL_LINE_LOOP
         `linewidth` :  defaults to current OpenGL state.  sets the linewidth if drawign style is a line based one
     '''
-    if type(style) == type('string'):
+    if type(style) in (str, unicode):
         if style in ('fill', 'GL_POLYGON'):
             style = GL_POLYGON
         if style in ('line', 'GL_LINE_LOOP'):
@@ -267,7 +269,7 @@ def drawPolygon(points, style=GL_POLYGON, linewidth=0):
         glPopAttrib()
 
 
-def drawTriangle(pos, w, h, style=None, linewidth=0):
+def drawTriangle(pos, w, h, style=GL_POLYGON, linewidth=0):
     '''Draw one triangle
 
     :Parameters:
@@ -411,11 +413,11 @@ def drawLine(points, width=None, colors=[]):
 
     with DO(gx_attrib(GL_COLOR_BUFFER_BIT), gx_begin(style)):
         if colors:
-            colors = colors[:]
-            for x, y, r, g, b in zip(points[::2], points[1::2],
-                                     colors[::3], colors[1::3], colors[2::3]):
-                glColor3f(r, g, b)
+            i = 0
+            for x,y in zip(points[::2], points[1::2]):
+                glColor4fv(colors[i])
                 glVertex2f(x, y)
+                i += 1
         else:
             for x, y in zip(points[::2], points[1::2]):
                 glVertex2f(x, y)

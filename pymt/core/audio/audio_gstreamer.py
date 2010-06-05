@@ -49,11 +49,13 @@ class SoundGstreamer(Sound):
         if not self._data:
             return
         self._data.set_state(gst.STATE_PLAYING)
+        super(SoundGstreamer, self).play()
 
     def stop(self):
         if not self._data:
             return
         self._data.set_state(gst.STATE_NULL)
+        super(SoundGstreamer, self).stop()
 
     def load(self):
         self.unload()
@@ -92,11 +94,11 @@ class SoundGstreamer(Sound):
     def _get_volume(self):
         if self._data is not None:
             self._volume = self._data.get_property('volume')
-        return super(SoundPygame, self)._get_volume()
+        return super(SoundGstreamer, self)._get_volume()
 
     def _set_volume(self, volume):
         if self._data is not None:
             self._data.set_property('volume', volume)
-        return super(SoundPygame, self)._set_volume(volume)
+        return super(SoundGstreamer, self)._set_volume(volume)
 
 SoundLoader.register(SoundGstreamer)

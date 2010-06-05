@@ -162,8 +162,11 @@ class MTWindowPygame(BaseWindow):
                     self.dispatch_event('on_key_up', event.key,
                         event.scancode)
                     continue
-                self.dispatch_event('on_key_down', event.key,
-                                    event.scancode, event.unicode)
+
+                # don't dispatch more key if down event is accepted
+                if self.dispatch_event('on_key_down', event.key,
+                                       event.scancode, event.unicode):
+                    continue
                 self.dispatch_event('on_keyboard', event.key,
                                     event.scancode, event.unicode)
 
@@ -202,9 +205,10 @@ class MTWindowPygame(BaseWindow):
 
 
     def _set_size(self, size):
-        # set pygame mode only if size have really changed
         if super(MTWindowPygame, self)._set_size(size):
             self._pygame_set_mode()
+            return True
+    size = property(BaseWindow._get_size, _set_size)
 
 
     #

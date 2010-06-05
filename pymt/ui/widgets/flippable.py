@@ -93,12 +93,12 @@ class MTFlippableWidget(MTWidget):
         if self.side == 'front':
             self.side = 'back'
             self.children.clear()
-            for x in self.children_back.iterate():
+            for x in self.children_back[:]:
                 super(MTFlippableWidget, self).add_widget(x)
         else:
             self.side = 'front'
             self.children.clear()
-            for x in self.children_front.iterate():
+            for x in self.children_front[:]:
                 super(MTFlippableWidget, self).add_widget(x)
 
     def flip_to(self, to):

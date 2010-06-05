@@ -101,11 +101,6 @@ class MTAbstractLayout(MTWidget):
     def update(self):
         self.need_update = True
 
-    def draw(self):
-        if self.bg_color[3] > 0:
-            set_color(*self.bg_color)
-            drawRectangle(self.pos, self.size)
-
     def on_layout(self):
         pass
 
@@ -126,6 +121,8 @@ class MTAbstractLayout(MTWidget):
             self.do_layout()
             self.need_update_set = False
         return super(MTAbstractLayout, self)._get_size()
+    size = property(_get_size, MTWidget._set_size)
+
     def _get_width(self):
         if self.need_update and not self.need_update_set:
             self.need_update_set = True
@@ -133,6 +130,8 @@ class MTAbstractLayout(MTWidget):
             self.do_layout()
             self.need_update_set = False
         return super(MTAbstractLayout, self)._get_width()
+    width = property(_get_width, MTWidget._set_width)
+
     def _get_height(self):
         if self.need_update and not self.need_update_set:
             self.need_update_set = True
@@ -140,6 +139,8 @@ class MTAbstractLayout(MTWidget):
             self.do_layout()
             self.need_update_set = False
         return super(MTAbstractLayout, self)._get_height()
+    height = property(_get_height, MTWidget._set_height)
+
     def _get_pos(self):
         if self.need_update and not self.need_update_set:
             self.need_update_set = True
@@ -147,6 +148,8 @@ class MTAbstractLayout(MTWidget):
             self.do_layout()
             self.need_update_set = False
         return super(MTAbstractLayout, self)._get_pos()
+    pos = property(_get_pos, MTWidget._set_pos)
+
     def _get_x(self):
         if self.need_update and not self.need_update_set:
             self.need_update_set = True
@@ -154,6 +157,8 @@ class MTAbstractLayout(MTWidget):
             self.do_layout()
             self.need_update_set = False
         return super(MTAbstractLayout, self)._get_x()
+    x = property(_get_x, MTWidget._set_x)
+
     def _get_y(self):
         if self.need_update and not self.need_update_set:
             self.need_update_set = True
@@ -161,4 +166,6 @@ class MTAbstractLayout(MTWidget):
             self.do_layout()
             self.need_update_set = False
         return super(MTAbstractLayout, self)._get_y()
+    y = property(_get_y, MTWidget._set_y)
+
 

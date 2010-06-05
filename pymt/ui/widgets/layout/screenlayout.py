@@ -70,7 +70,7 @@ class MTScreenLayout(MTAbstractLayout):
         self.screens.append(widget)
 
     def remove_widget(self, widget):
-        for btn in self.tabs.children.iterate():
+        for btn in self.tabs.children[:]:
             if type(widget) in (str, unicode):
                 if btn.label == widget:
                     self.tabs.remove_widget(btn)
